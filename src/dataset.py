@@ -1,13 +1,19 @@
+import sys
+sys.path.append("src")
+
 import torch
 from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 
-from preprocess import encode_text, label_map
+from preprocess import encode_text, label_map, get_text, build_vocab
 
 
 class LLMResponseDataset(Dataset):
-    def __init__(self, dataframe):
+
+    def __init__(self, dataframe, vocab, text_mode="output"):
         self.dataframe = dataframe.reset_index(drop=True)
+        self.vocab = vocab
+        self.text_mode = text_mode
 
     def __len__(self):
         return len(self.dataframe)
@@ -15,10 +21,13 @@ class LLMResponseDataset(Dataset):
     def __getitem__(self, idx):
         row = self.dataframe.iloc[idx]
 
-        # Convert LLM response into 300 token IDs
-        encoded_text = encode_text(row["LLM_output"])
+        text = get_text(row, self.text_mode)
 
-        # Convert model name into class number
+        encoded_text = encode_text(
+            text,
+            self.vocab
+        )
+
         label = label_map[row["LLM_name"]]
 
         return (
@@ -30,44 +39,29 @@ class LLMResponseDataset(Dataset):
 if __name__ == "__main__":
 
     train_df = pd.read_csv("data/train.csv")
-    val_df = pd.read_csv("data/val.csv")
-    test_df = pd.read_csv("data/test.csv")
 
-    train_dataset = LLMResponseDataset(train_df)
-    val_dataset = LLMResponseDataset(val_df)
-    test_dataset = LLMResponseDataset(test_df)
+    for mode in ["input", "output", "combined"]:
 
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=32,
-        shuffle=True
-    )
+        vocab = build_vocab(
+            train_df,
+            mode
+        )
 
-    val_loader = DataLoader(
-        val_dataset,
-        batch_size=32,
-        shuffle=False
-    )
+        dataset = LLMResponseDataset(
+            train_df,
+            vocab,
+            text_mode=mode
+        )
 
-    test_loader = DataLoader(
-        test_dataset,
-        batch_size=32,
-        shuffle=False
-    )
+        loader = DataLoader(
+            dataset,
+            batch_size=32,
+            shuffle=True
+        )
 
-    print("\nDataset sizes:")
-    print("Train:", len(train_dataset))
-    print("Validation:", len(val_dataset))
-    print("Test:", len(test_dataset))
+        texts, labels = next(iter(loader))
 
-    # Look at one batch
-    texts, labels = next(iter(train_loader))
-
-    print("\nBatch text shape:", texts.shape)
-    print("Batch label shape:", labels.shape)
-
-    print("\nFirst 10 labels:")
-    print(labels[:10])
-
-    print("\nFirst example, first 20 token IDs:")
-    print(texts[0][:20])
+        print(f"\nMode: {mode}")
+        print("Vocabulary size:", len(vocab))
+        print("Text shape:", texts.shape)
+        print("Label shape:", labels.shape)

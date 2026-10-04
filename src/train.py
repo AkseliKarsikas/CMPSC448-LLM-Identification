@@ -6,29 +6,58 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import pandas as pd
 
-from preprocess import vocab
+from preprocess import build_vocab
 from dataset import LLMResponseDataset
 from cnn import CNNClassifier
 from rnn import RNNClassifier
 
 
-# Choose model from command line
-if len(sys.argv) < 2:
-    print("Usage: python3 src/train.py cnn")
-    print("   or: python3 src/train.py rnn")
+# Command format:
+# python3 src/train.py cnn input
+# python3 src/train.py cnn output
+# python3 src/train.py cnn combined
+
+if len(sys.argv) < 3:
+    print("Usage: python3 src/train.py <cnn|rnn> <input|output|combined>")
     sys.exit()
 
 model_type = sys.argv[1].lower()
+text_mode = sys.argv[2].lower()
 
-# Reproducibility
+if model_type not in ["cnn", "rnn"]:
+    print("Model must be 'cnn' or 'rnn'")
+    sys.exit()
+
+if text_mode not in ["input", "output", "combined"]:
+    print("Text mode must be 'input', 'output', or 'combined'")
+    sys.exit()
+
+
 torch.manual_seed(42)
 
 # Load data
 train_df = pd.read_csv("data/train.csv")
 val_df = pd.read_csv("data/val.csv")
 
-train_dataset = LLMResponseDataset(train_df)
-val_dataset = LLMResponseDataset(val_df)
+# Build vocabulary ONLY from training data for this text mode
+vocab = build_vocab(train_df, text_mode)
+
+print(f"Model: {model_type.upper()}")
+print(f"Text mode: {text_mode}")
+print(f"Vocabulary size: {len(vocab)}")
+
+# Datasets
+train_dataset = LLMResponseDataset(
+    train_df,
+    vocab,
+    text_mode=text_mode
+)
+
+val_dataset = LLMResponseDataset(
+    val_df,
+    vocab,
+    text_mode=text_mode
+)
 
 train_loader = DataLoader(
     train_dataset,
@@ -42,19 +71,11 @@ val_loader = DataLoader(
     shuffle=False
 )
 
-# Create selected model
+# Model
 if model_type == "cnn":
     model = CNNClassifier(vocab_size=len(vocab))
-    save_path = "results/cnn_model.pt"
-
-elif model_type == "rnn":
-    model = RNNClassifier(vocab_size=len(vocab))
-    save_path = "results/rnn_model.pt"
-
 else:
-    print("Model must be 'cnn' or 'rnn'")
-    sys.exit()
-
+    model = RNNClassifier(vocab_size=len(vocab))
 
 criterion = nn.CrossEntropyLoss()
 
@@ -64,6 +85,8 @@ optimizer = torch.optim.Adam(
 )
 
 epochs = 10
+
+save_path = f"results/{model_type}_{text_mode}_model.pt"
 
 
 def evaluate(loader):
@@ -75,6 +98,7 @@ def evaluate(loader):
 
     with torch.no_grad():
         for texts, labels in loader:
+
             outputs = model(texts)
             loss = criterion(outputs, labels)
 
@@ -85,12 +109,9 @@ def evaluate(loader):
             correct += (predictions == labels).sum().item()
             total += labels.size(0)
 
-    accuracy = correct / total
-
-    return total_loss / len(loader), accuracy
+    return total_loss / len(loader), correct / total
 
 
-# Keep the model with the best validation accuracy
 best_val_accuracy = 0.0
 best_epoch = 0
 
@@ -123,8 +144,8 @@ for epoch in range(epochs):
         f"Val Accuracy: {val_accuracy:.4f}"
     )
 
-    # Save best model instead of automatically saving final epoch
     if val_accuracy > best_val_accuracy:
+
         best_val_accuracy = val_accuracy
         best_epoch = epoch + 1
 
@@ -134,7 +155,7 @@ for epoch in range(epochs):
         )
 
 
-print(f"\n{model_type.upper()} training complete.")
+print(f"\n{model_type.upper()} ({text_mode}) training complete.")
 print(f"Best epoch: {best_epoch}")
 print(f"Best validation accuracy: {best_val_accuracy:.4f}")
 print(f"Saved best model to {save_path}")

@@ -1,0 +1,20 @@
+
+RNN - INPUT TEST RESULTS
+=============================================
+Accuracy: 0.3333
+
+Classification Report:
+                       precision    recall  f1-score   support
+
+         GPT-5.6 Luna     0.3333    1.0000    0.5000        23
+Gemini 3.5 Flash-Lite     0.0000    0.0000    0.0000        23
+         Qwen 3.8 27B     0.0000    0.0000    0.0000        23
+
+             accuracy                         0.3333        69
+            macro avg     0.1111    0.3333    0.1667        69
+         weighted avg     0.1111    0.3333    0.1667        69
+
+Confusion Matrix:
+[[23  0  0]
+ [23  0  0]
+ [23  0  0]]

@@ -1,0 +1,20 @@
+
+CNN - OUTPUT TEST RESULTS
+=============================================
+Accuracy: 0.8261
+
+Classification Report:
+                       precision    recall  f1-score   support
+
+         GPT-5.6 Luna     0.8846    1.0000    0.9388        23
+Gemini 3.5 Flash-Lite     0.7308    0.8261    0.7755        23
+         Qwen 3.8 27B     0.8824    0.6522    0.7500        23
+
+             accuracy                         0.8261        69
+            macro avg     0.8326    0.8261    0.8214        69
+         weighted avg     0.8326    0.8261    0.8214        69
+
+Confusion Matrix:
+[[23  0  0]
+ [ 2 19  2]
+ [ 1  7 15]]
