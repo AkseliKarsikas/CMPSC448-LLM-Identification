@@ -1,0 +1,66 @@
+Dataset split complete.
+
+Train:
+Responses: 315
+Prompts: 105
+LLM_name
+GPT-5.6 Luna             105
+Gemini 3.5 Flash-Lite    105
+Qwen 3.8 27B             105
+Name: count, dtype: int64
+
+Validation:
+Responses: 66
+Prompts: 22
+LLM_name
+GPT-5.6 Luna             22
+Gemini 3.5 Flash-Lite    22
+Qwen 3.8 27B             22
+Name: count, dtype: int64
+
+Test:
+Responses: 69
+Prompts: 23
+LLM_name
+GPT-5.6 Luna             23
+Gemini 3.5 Flash-Lite    23
+Qwen 3.8 27B             23
+Name: count, dtype: int64
+
+No prompt leakage detected.
+
+Vocabulary size: 6067
+
+Label mapping:
+{'GPT-5.6 Luna': 0, 'Gemini 3.5 Flash-Lite': 1, 'Qwen 3.8 27B': 2}
+
+Example original text:
+Maintaining body tension in a handstand is important because it keeps your body aligned and makes balancing more efficient.
+
+- **Improves balance:** A straight, connected body moves as one unit, makin
+
+First 20 encoded tokens:
+[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 3, 14, 15, 16, 17, 18, 19, 20]
+
+Encoded sequence length:
+300
+
+CNN TEST RESULTS
+========================================
+Accuracy: 0.8261
+
+Classification Report:
+                       precision    recall  f1-score   support
+
+         GPT-5.6 Luna     0.8846    1.0000    0.9388        23
+Gemini 3.5 Flash-Lite     0.7308    0.8261    0.7755        23
+         Qwen 3.8 27B     0.8824    0.6522    0.7500        23
+
+             accuracy                         0.8261        69
+            macro avg     0.8326    0.8261    0.8214        69
+         weighted avg     0.8326    0.8261    0.8214        69
+
+Confusion Matrix:
+[[23  0  0]
+ [ 2 19  2]
+ [ 1  7 15]]

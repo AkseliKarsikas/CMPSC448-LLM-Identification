@@ -9,7 +9,16 @@ import pandas as pd
 from preprocess import vocab
 from dataset import LLMResponseDataset
 from cnn import CNNClassifier
+from rnn import RNNClassifier
 
+
+# Choose model from command line
+if len(sys.argv) < 2:
+    print("Usage: python3 src/train.py cnn")
+    print("   or: python3 src/train.py rnn")
+    sys.exit()
+
+model_type = sys.argv[1].lower()
 
 # Reproducibility
 torch.manual_seed(42)
@@ -33,10 +42,19 @@ val_loader = DataLoader(
     shuffle=False
 )
 
-# Create model
-model = CNNClassifier(
-    vocab_size=len(vocab)
-)
+# Create selected model
+if model_type == "cnn":
+    model = CNNClassifier(vocab_size=len(vocab))
+    save_path = "results/cnn_model.pt"
+
+elif model_type == "rnn":
+    model = RNNClassifier(vocab_size=len(vocab))
+    save_path = "results/rnn_model.pt"
+
+else:
+    print("Model must be 'cnn' or 'rnn'")
+    sys.exit()
+
 
 criterion = nn.CrossEntropyLoss()
 
@@ -72,7 +90,11 @@ def evaluate(loader):
     return total_loss / len(loader), accuracy
 
 
-# Training
+# Keep the model with the best validation accuracy
+best_val_accuracy = 0.0
+best_epoch = 0
+
+
 for epoch in range(epochs):
 
     model.train()
@@ -83,11 +105,9 @@ for epoch in range(epochs):
         optimizer.zero_grad()
 
         outputs = model(texts)
-
         loss = criterion(outputs, labels)
 
         loss.backward()
-
         optimizer.step()
 
         total_loss += loss.item()
@@ -103,12 +123,18 @@ for epoch in range(epochs):
         f"Val Accuracy: {val_accuracy:.4f}"
     )
 
+    # Save best model instead of automatically saving final epoch
+    if val_accuracy > best_val_accuracy:
+        best_val_accuracy = val_accuracy
+        best_epoch = epoch + 1
 
-# Save trained model
-torch.save(
-    model.state_dict(),
-    "results/cnn_model.pt"
-)
+        torch.save(
+            model.state_dict(),
+            save_path
+        )
 
-print("\nCNN training complete.")
-print("Saved model to results/cnn_model.pt")
+
+print(f"\n{model_type.upper()} training complete.")
+print(f"Best epoch: {best_epoch}")
+print(f"Best validation accuracy: {best_val_accuracy:.4f}")
+print(f"Saved best model to {save_path}")
